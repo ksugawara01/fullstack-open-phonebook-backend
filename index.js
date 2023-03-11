@@ -1,6 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const mongoose = require('mongoose')
+const Person = require('./models/person')
 const app = express()
 
 app.use(express.static('build'))
@@ -8,28 +11,8 @@ app.use(express.json())
 app.use(morgan('tiny'))
 app.use(cors())
 
-let persons = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+//This is an object constructor
+//const Person = mongoose.model('Person', personSchema)
 
 app.get('/', (request, response) => {
     response.send('<h1>Hello World!</h1>')
@@ -42,7 +25,9 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Person.find({}).then((person) => {
+        response.json(person)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
@@ -64,10 +49,18 @@ app.delete('/api/persons/:id', (request, response) => {
 })
 
 app.post('/api/persons', (request, response) => {
-    const person = request.body
     console.log("request body", request.body)
-    person.id = Math.floor(Math.random()*10000)
+    
+    const person = new Person({
+        name: request.body.name,
+        number: request.body.number,
+    })
 
+    person.save().then((result) => {
+        console.log(`${person.name} has been saved to the database.`)
+        return response.json(person) 
+    })
+/*
     if(person.name && person.number) {
         if (persons.some(p => p.name === person.name)) {
             return response.status(400).json({
@@ -82,9 +75,10 @@ app.post('/api/persons', (request, response) => {
             error: 'content missing'
         })
     }
+    */
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
